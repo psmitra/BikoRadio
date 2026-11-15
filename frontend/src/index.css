@@ -1,0 +1,99 @@
+@import "@fontsource/open-sans/400.css";
+@import "@fontsource/open-sans/500.css";
+@import "@fontsource/open-sans/700.css";
+@import "@fontsource/open-sans/800.css";
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #1d5fe0;
+  --color-brand-dark: #1649b0;
+  --color-gold: #ffd60a;
+  --color-gold-dark: #e6c000;
+  --color-live: #e5322d;
+  --color-ink: #14213d;
+  --color-muted: #5b6577;
+  --color-line: #dde3ee;
+  --color-surface: #f4f7fc;
+  --font-sans: "Open Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* "fit" = wide AND tall enough for the Discover page to fit the screen without scrolling. */
+@custom-variant fit (@media (min-width: 80rem) and (min-height: 940px));
+
+/* Registered colour variables let the browser animate the two gradient colours smoothly. */
+@property --btn-from { syntax: "<color>"; inherits: false; initial-value: #14b0ff; }
+@property --btn-to { syntax: "<color>"; inherits: false; initial-value: #0a63e6; }
+
+@utility btn-blue {
+  --btn-from: #14b0ff;
+  --btn-to: #0a63e6;
+  background: linear-gradient(90deg, var(--btn-from), var(--btn-to));
+  border-color: transparent;
+  background-origin: border-box;
+  background-clip: border-box;
+  color: #fff;
+  box-shadow: 0 0 6px rgba(20, 176, 255, 0.35);
+  transition:
+    --btn-from 0.5s ease,
+    --btn-to 0.5s ease,
+    box-shadow 0.4s ease,
+    transform 0.3s ease !important;
+  &:hover:not(:disabled) {
+    /* gradient direction flips: the two colours blend smoothly, no moving band */
+    --btn-from: #0a63e6;
+    --btn-to: #14b0ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -2px rgba(10, 99, 230, 0.35);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0) scale(0.985);
+    box-shadow: 0 0 4px rgba(20, 176, 255, 0.3);
+  }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes toast-bar {
+  from { width: 100%; }
+  to { width: 0; }
+}
+@keyframes toast-draw { to { stroke-dashoffset: 0; } }
+@keyframes toast-fill {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes toast-ring {
+  from { opacity: 0.45; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.7); }
+}
+@keyframes toast-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+.toast-in { animation: toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1); }
+.toast-shake { animation: toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1), toast-shake 0.45s 0.35s ease-in-out; }
+.toast-draw-circle, .toast-draw-mark { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.toast-draw-circle { animation: toast-draw 0.5s 0.15s ease-out forwards; }
+.toast-draw-mark { animation: toast-draw 0.35s 0.6s ease-out forwards; }
+.toast-draw-mark-2 { animation-delay: 0.8s; }
+.toast-fill, .toast-ring { transform-box: fill-box; transform-origin: center; opacity: 0; }
+.toast-fill { animation: toast-fill 0.3s 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.toast-ring { animation: toast-ring 0.7s 0.6s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .toast-in, .toast-shake, .toast-draw-circle, .toast-draw-mark, .toast-fill, .toast-ring { animation-duration: 0.01s; animation-delay: 0s; }
+}
+.toast-bar { animation-name: toast-bar; animation-timing-function: linear; animation-fill-mode: forwards; }
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+button, input, select, textarea { font-family: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
