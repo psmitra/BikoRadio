@@ -24,8 +24,16 @@ export default function MicTestModal({ open, onClose }: { open: boolean; onClose
   return (
     <Modal title="Test microphone" open={open} onClose={onClose}>
       <p className="mb-4 text-sm text-muted">{messages[state]}</p>
-      <div className="mb-5 h-3 overflow-hidden rounded-full bg-surface" aria-label="Input level">
-        <div className="h-full rounded-full bg-brand transition-[width] duration-75" style={{ width: `${level * 100}%` }} />
+      {/* The gradient is laid across the whole track and revealed from the left, so the colour at the
+          tip of the bar goes from light (quiet) to dark (loud) as the volume rises. */}
+      <div className="mb-5 h-3 overflow-hidden rounded-full bg-surface" role="meter" aria-label="Input level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level * 100)}>
+        <div
+          className="h-full w-full transition-[clip-path] duration-75"
+          style={{
+            background: 'linear-gradient(90deg, #bfe6ff 0%, #4db3ff 35%, #0a63e6 70%, #06277a 100%)',
+            clipPath: `inset(0 ${100 - Math.max(level, 0.02) * 100}% 0 0 round 9999px)`,
+          }}
+        />
       </div>
       <Button
         className="w-full"

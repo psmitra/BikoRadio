@@ -7,14 +7,15 @@ import LiveChat from '../components/chat/LiveChat'
 import MembershipCard from '../components/membership/MembershipCard'
 import HeroPlayer from '../components/player/HeroPlayer'
 
-// When the window is wide and tall enough (the "fit" variant in index.css) the whole page is
-// exactly one screen tall and the cards share the height. Otherwise the page scrolls normally.
-const cell =
-  'flex flex-col [&>*]:flex-1 fit:min-h-0 fit:[&>*]:min-h-0 fit:[&>*]:overflow-y-auto fit:[&>section]:p-5fit:[&_button]:py-2'
+// When the window is wide and tall enough (the "fit" variant in index.css) the page is at least one
+// screen tall and the two rows share that height. A row never gets shorter than its tallest card
+// (minmax(auto, …)), so cards never scroll inside: if a card gains content the row grows instead,
+// taking space from the other row and, only if needed, making the page itself scroll a little.
+const cell = 'flex flex-col [&>*]:flex-1 fit:[&_button]:py-2'
 
 export default function Discover() {
   return (
-    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-12 fit:h-[max(calc(100dvh-7rem),51.5rem)] fit:grid-rows-[minmax(21.75rem,0.9fr)_minmax(25.5rem,1fr)_auto] fit:gap-4">
+    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-12 fit:min-h-[max(calc(100dvh-7rem),51.5rem)] fit:grid-rows-[minmax(auto,0.9fr)_minmax(auto,1fr)_auto] fit:gap-4">
       {/* Below xl the order is: player, create channel, then the side cards (xl restores the 3-column design). */}
       <div className={`${cell} order-1 md:col-span-2 xl:order-none xl:col-span-6`}><HeroPlayer /></div>
       <div className={`${cell} order-3 xl:order-none xl:col-span-3`}><CallInCard /></div>

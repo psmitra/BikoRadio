@@ -1,5 +1,5 @@
 import { faMicrophone, faPhone, faRightFromBracket } from '@fortawesome/free-solid-svg-icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { approveCaller, joinQueue, leaveQueue } from '../../services/api'
 import { useQueueStatus } from '../../services/store'
 import type { QueueStatus } from '../../types'
@@ -7,6 +7,7 @@ import MicTestModal from '../broadcaster/MicTestModal'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 import Icon from '../ui/Icon'
+import { useToast } from '../ui/Toast'
 
 const statusText: Record<QueueStatus, string> = {
   idle: 'Host approval required before you go on air.',
@@ -16,6 +17,7 @@ const statusText: Record<QueueStatus, string> = {
 }
 
 export default function CallInCard() {
+  const toast = useToast()
   const [status] = useQueueStatus()
   const [busy, setBusy] = useState(false)
   const [micOpen, setMicOpen] = useState(false)
@@ -27,10 +29,34 @@ export default function CallInCard() {
     return () => clearTimeout(t)
   }, [status])
 
-  const run = async (fn: () => Promise<void>) => {
+  // Tell the caller when the (simulated) host approves them.
+  const prevStatus = useRef(status)
+  useEffect(() => {
+    if (prevStatus.current === 'queued' && status === 'approved') {
+      toast.success({ title: "You've been approved!", message: 'The host will bring you on air shortly.' })
+    }
+    prevStatus.current = status
+  }, [status, toast])
+
+  const join = async () => {
     setBusy(true)
     try {
-      await fn()
+      await joinQueue()
+      toast.success({ title: "You're in the queue", message: 'Waiting for the host to approve you.' })
+    } catch {
+      toast.error({ title: 'Could not join the queue', message: 'Something went wrong. Please try again.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const leave = async () => {
+    setBusy(true)
+    try {
+      await leaveQueue()
+      toast.success({ title: 'Left the queue', message: 'You can rejoin whenever you like.' })
+    } catch {
+      toast.error({ title: 'Could not leave the queue', message: 'Something went wrong. Please try again.' })
     } finally {
       setBusy(false)
     }
@@ -46,13 +72,13 @@ export default function CallInCard() {
       </div>
       <p className="mt-1 mb-4 text-sm text-muted fit:mb-3">Be part of the conversation. Share your thoughts, ask a question or add your voice.</p>
       <div className="flex flex-1 flex-col gap-2.5 [&>button]:flex-1">
-        <Button onClick={() => run(joinQueue)} disabled={busy || inQueue} icon={<Icon icon={faPhone} />}>
+        <Button onClick={join} disabled={busy || inQueue} icon={<Icon icon={faPhone} />}>
           {inQueue ? 'In call queue' : 'Join call queue'}
         </Button>
         <Button variant="outline" onClick={() => setMicOpen(true)} icon={<Icon icon={faMicrophone} />}>
           Test microphone
         </Button>
-        <Button variant="danger" onClick={() => run(leaveQueue)} disabled={busy || !inQueue} icon={<Icon icon={faRightFromBracket} />}>
+        <Button variant="danger" onClick={leave} disabled={busy || !inQueue} icon={<Icon icon={faRightFromBracket} />}>
           Leave queue
         </Button>
       </div>

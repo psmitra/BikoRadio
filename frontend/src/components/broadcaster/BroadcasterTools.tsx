@@ -114,9 +114,9 @@ export default function BroadcasterTools() {
       </div>
 
       {liveChannel && (
-        <p className="mt-3 text-sm" role="status">
+        <p className="mt-3 text-sm" role="status" title="Listeners will hear you once the streaming backend is connected.">
           <span className="font-bold text-live">● You are live</span>
-          <span className="text-muted"> — microphone connected. Listeners will hear you once the streaming backend is connected.</span>
+          <span className="text-muted"> — microphone connected</span>
         </p>
       )}
       {upcoming[0] && (

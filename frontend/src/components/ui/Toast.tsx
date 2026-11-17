@@ -1,5 +1,5 @@
 import { faXmark } from '@fortawesome/free-solid-svg-icons'
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from './Icon'
 
@@ -16,6 +16,8 @@ interface ToastInput {
 interface ToastItem extends ToastInput {
   id: number
   kind: Kind
+  /** true while the slide-out animation plays */
+  leaving?: boolean
 }
 
 interface ToastApi {
@@ -24,6 +26,7 @@ interface ToastApi {
 }
 
 const DURATION: Record<Kind, number> = { success: 5000, error: 7000 }
+const EXIT_MS = 450 // keep in sync with .toast-out in index.css
 const COLORS: Record<Kind, string> = { success: '#10b981', error: '#ef4444' }
 
 const ToastContext = createContext<ToastApi>({ success: () => {}, error: () => {} })
@@ -54,15 +57,25 @@ function AnimatedMark({ kind }: { kind: Kind }) {
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([])
 
-  const dismiss = useCallback((id: number) => setItems((l) => l.filter((t) => t.id !== id)), [])
+  // Dismissing plays the slide-out animation first, then removes the toast.
+  const dismiss = useCallback((id: number) => {
+    setItems((l) => (l.some((t) => t.id === id && !t.leaving) ? l.map((t) => (t.id === id ? { ...t, leaving: true } : t)) : l))
+    setTimeout(() => setItems((l) => l.filter((t) => t.id !== id)), EXIT_MS)
+  }, [])
   const push = useCallback(
     (kind: Kind, t: ToastInput) => {
       const id = nextId++
-      setItems((l) => [...l.slice(-2), { ...t, id, kind }])
+      setItems((l) => [...l, { ...t, id, kind }])
       setTimeout(() => dismiss(id), DURATION[kind])
     },
     [dismiss],
   )
+
+  // Show at most three toasts: the oldest ones slide out to make room.
+  useEffect(() => {
+    const active = items.filter((t) => !t.leaving)
+    if (active.length > 3) active.slice(0, active.length - 3).forEach((t) => dismiss(t.id))
+  }, [items, dismiss])
   const api = useMemo<ToastApi>(() => ({ success: (t) => push('success', t), error: (t) => push('error', t) }), [push])
 
   return (
@@ -73,7 +86,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role={t.kind === 'error' ? 'alert' : 'status'}
-            className={`toast-in pointer-events-auto relative overflow-hidden rounded-2xl bg-white p-4 pr-10 shadow-2xl ring-1 ring-black/5 ${t.kind === 'error' ? 'toast-shake' : ''}`}
+            className={`relative overflow-hidden rounded-2xl bg-white p-4 pr-10 shadow-2xl ring-1 ring-black/5 ${
+              t.leaving ? 'toast-out pointer-events-none' : `pointer-events-auto ${t.kind === 'error' ? 'toast-shake' : 'toast-in'}`
+            }`}
           >
             <span className="absolute inset-y-0 left-0 w-1.5" style={{ background: COLORS[t.kind] }} />
             <div className="flex items-center gap-3 pl-1.5">

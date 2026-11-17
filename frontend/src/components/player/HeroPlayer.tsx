@@ -1,4 +1,4 @@
-import { faPause, faPlay, faShareNodes, faSpinner, faUserCheck, faUserPlus, faVolumeHigh, faVolumeLow, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
+import { faCheck, faPause, faPlay, faShareNodes, faSpinner, faUserCheck, faUserPlus, faVolumeHigh, faVolumeLow, faVolumeXmark } from '@fortawesome/free-solid-svg-icons'
 import Icon from '../ui/Icon'
 import { useEffect, useState } from 'react'
 import { useAudioPlayer } from '../../hooks/useAudioPlayer'
@@ -6,31 +6,49 @@ import { getLiveShow } from '../../services/api'
 import { useChannels, useFollowing } from '../../services/store'
 import type { LiveShow } from '../../types'
 import Button from '../ui/Button'
+import { useToast } from '../ui/Toast'
 
 export default function HeroPlayer() {
   const [show, setShow] = useState<LiveShow | null>(null)
   const [following, setFollowing] = useFollowing()
   const [channels] = useChannels()
   const liveChannel = channels.find((c) => c.live)
-  const [copied, setCopied] = useState(false)
+  const toast = useToast()
+  const [copied, setCopied] = useState(false) // Share button briefly says "Copied"
   const [imgOk, setImgOk] = useState(true) // false -> fall back to the gradient look
   const player = useAudioPlayer(show?.streamUrl ?? '')
+  const showName = liveChannel?.name ?? show?.title ?? 'this show'
 
   useEffect(() => {
     void getLiveShow().then(setShow)
   }, [])
 
+  // Stream problems are reported as a toast instead of text under the player.
+  useEffect(() => {
+    if (player.error) toast.error({ title: 'Could not play the stream', message: player.error })
+  }, [player.error, toast])
+
+  const toggleFollow = () => {
+    const next = !following
+    setFollowing(next)
+    if (next) toast.success({ title: 'Following', message: `You're now following “${showName}”.` })
+    else toast.success({ title: 'Unfollowed', message: `You stopped following “${showName}”.` })
+  }
+
   const share = async () => {
     const url = window.location.href
     try {
-      if (navigator.share) await navigator.share({ title: 'Biko Radio', url })
-      else {
+      if (navigator.share) {
+        await navigator.share({ title: 'Biko Radio', url })
+      } else {
         await navigator.clipboard.writeText(url)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
+        toast.success({ title: 'Link copied', message: 'The page link is on your clipboard. Paste it anywhere to share.' })
       }
-    } catch {
-      /* user cancelled */
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return // user closed the share sheet
+      toast.error({ title: 'Could not share', message: 'Copy the link from the address bar instead.' })
     }
   }
 
@@ -87,15 +105,14 @@ export default function HeroPlayer() {
         </label>
 
         <div className="grid w-full grid-cols-2 gap-3 sm:ml-auto sm:flex sm:w-auto sm:gap-2">
-          <Button variant="outline" onClick={() => setFollowing(!following)} icon={<Icon icon={following ? faUserCheck : faUserPlus} className="text-brand" />}>
+          <Button variant="outline" onClick={toggleFollow} icon={<Icon icon={following ? faUserCheck : faUserPlus} className="text-brand" />}>
             {following ? 'Following' : 'Follow'}
           </Button>
-          <Button variant="outline" onClick={share} icon={<Icon icon={faShareNodes} className="text-brand" />}>
-            {copied ? 'Link copied' : 'Share'}
+          <Button variant="outline" onClick={share} icon={<Icon icon={copied ? faCheck : faShareNodes} className={copied ? 'text-emerald-600' : 'text-brand'} />}>
+            {copied ? 'Copied' : 'Share'}
           </Button>
         </div>
       </div>
-      {player.error && <p className="mt-2 text-sm text-live">{player.error}</p>}
     </div>
   )
 }
